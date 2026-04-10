@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>信用卡帳務管理</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: #f0f4f8;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+      color: #fff;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 1.4rem; letter-spacing: 1px; }
+
+    nav {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e2e8f0;
+      overflow-x: auto;
+    }
+    nav button {
+      flex: 1;
+      min-width: 100px;
+      padding: 14px 8px;
+      border: none;
+      background: transparent;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: #718096;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    nav button:hover { color: #2b6cb0; background: #ebf8ff; }
+    nav button.active { color: #2b6cb0; border-bottom-color: #2b6cb0; font-weight: 600; }
+
+    .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1.05rem; margin-bottom: 14px; color: #1a365d; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+
+    /* Form */
+    .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .form-group label { font-size: 0.82rem; color: #718096; font-weight: 500; }
+    .form-group input, .form-group select {
+      padding: 8px 10px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fff;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #2b6cb0; }
+
+    /* Buttons */
+    .btn {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: #2b6cb0; color: #fff; }
+    .btn-primary:hover { background: #1a4f8a; }
+    .btn-danger { background: #e53e3e; color: #fff; }
+    .btn-danger:hover { background: #c53030; }
+    .btn-success { background: #38a169; color: #fff; }
+    .btn-success:hover { background: #2f855a; }
+    .btn-sm { padding: 5px 12px; font-size: 0.82rem; }
+
+    /* Color dot */
+    .color-dot {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    /* Card list (設定頁) */
+    .cc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 4px; }
+    .cc-item {
+      display: flex;
+      align-items: center;
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      gap: 10px;
+    }
+    .cc-item .cc-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+
+    /* Bill summary cards */
+    .bill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 4px; }
+    .bill-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+      position: relative;
+    }
+    .bill-card .bc-header { display: flex; align-items: center; margin-bottom: 12px; gap: 8px; }
+    .bill-card .bc-name { font-weight: 700; font-size: 1rem; }
+    .bill-card .bc-month { font-size: 0.8rem; color: #718096; margin-left: auto; }
+
+    .bill-card .bc-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 6px; }
+    .bill-card .bc-row span:first-child { color: #718096; }
+    .bill-card .bc-row span:last-child { font-weight: 600; }
+    .bill-card .bc-row .pending { color: #e53e3e; font-size: 1rem; }
+    .bill-card .bc-row .paid-mark { color: #38a169; }
+    .bill-card .bc-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: #ebf4ff; color: #2b6cb0; font-weight: 600; padding: 10px 8px; text-align: left; }
+    td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tr:hover td { background: #f7fafc; }
+
+    /* Month filter */
+    .filter-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-row label { font-size: 0.85rem; color: #718096; font-weight: 500; }
+
+    /* Status badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-paid { background: #c6f6d5; color: #276749; }
+    .badge-unpaid { background: #fed7d7; color: #9b2c2c; }
+    .badge-partial { background: #fefcbf; color: #744210; }
+    .badge-exempt { background: #e2e8f0; color: #718096; }
+    .badge-pre { background: #ebf4ff; color: #2b6cb0; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px;
+      min-width: 320px;
+      max-width: 500px;
+      width: 92%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .modal h3 { font-size: 1.05rem; margin-bottom: 16px; color: #1a365d; }
+    .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #2d3748;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    .empty-hint { color: #a0aec0; font-size: 0.9rem; padding: 20px 0; text-align: center; }
+
+    /* Color picker row */
+    .color-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-opt {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .color-opt.selected { border-color: #2d3748; }
+    .color-opt-custom {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid #e2e8f0;
+      background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+      transition: border-color 0.15s;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .color-opt-custom.selected { border-color: #2d3748; }
+    /* 隱藏原生 color input 但保留點擊功能 */
+    #cc-color-custom-picker {
+      position: absolute;
+      width: 0; height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💳 信用卡帳務管理</h1>
+</header>
+
+<nav>
+  <button onclick="switchPage('page-cards')">設定信用卡</button>
+  <button onclick="switchPage('page-add')">新增帳單</button>
+  <button class="active" onclick="switchPage('page-query')">查詢帳單</button>
+  <button id="nav-data-btn" onclick="switchPage('page-data')">匯出／匯入</button>
+</nav>
+
+<!-- ===== 設定信用卡 ===== -->
+<div id="page-cards" class="page">
+  <div class="card">
+    <h2>新增信用卡</h2>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>信用卡名稱（例：台新 Go 卡）</label>
+        <input type="text" id="cc-name-input" placeholder="輸入信用卡名稱" maxlength="30">
+      </div>
+      <div class="form-group">
+        <label>顏色標記</label>
+        <div class="color-options" id="color-options"></div>
+        <input type="hidden" id="cc-color-input" value="#4299e1">
+        <input type="color" id="cc-color-custom-picker" value="#4299e1" onchange="applyCustomColor(this.value)">
+      </div>
+      <div style="padding-bottom:2px">
+        <button class="btn btn-primary" onclick="addCreditCard()">新增</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>已設定的信用卡</h2>
+    <div class="cc-list" id="cc-list">
+      <div class="empty-hint">尚未設定任何信用卡</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增帳單 ===== -->
+<div id="page-add" class="page">
+  <div class="card">
+    <h2>新增帳單</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>信用卡</label>
+        <select id="add-card-select" onchange="autoFillDueDate()">
+          <option value="">-- 選擇信用卡 --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>帳單月份</label>
+        <input type="month" id="add-month" value="" onchange="autoFillDueDate()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>帳單金額（元）</label>
+        <input type="number" id="add-amount" placeholder="0" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>繳費截止日期</label>
+        <input type="date" id="add-due-date">
+      </div>
+      <div class="form-group">
+        <label>已預付金額（元）</label>
+        <input type="number" id="add-prepaid" placeholder="0" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>未出帳金額（元）<span style="font-size:0.78rem;color:#a0aec0;font-weight:400">（選填，結帳前的估算）</span></label>
+        <input type="number" id="add-pre-amount" placeholder="不填表示無估算" min="0" step="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="addBill()">儲存帳單</button>
+      <button class="btn" style="background:#e2e8f0;color:#4a5568" onclick="clearAddForm()">清除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 查詢帳單 ===== -->
+<div id="page-query" class="page active">
+  <div class="card">
+    <div class="filter-row">
+      <label>查詢月份：</label>
+      <input type="month" id="query-month" onchange="renderQuery()">
+      <button class="btn btn-primary btn-sm" onclick="renderQuery()">查詢</button>
+      <button class="btn btn-sm" style="background:#e2e8f0;color:#4a5568" onclick="setQueryThisMonth()">本月</button>
+    </div>
+
+    <div id="query-totals" style="display:none;margin-bottom:16px"></div>
+    <div id="query-summary" class="bill-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>明細列表</h2>
+    <div id="query-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>信用卡</th>
+            <th>帳單月份</th>
+            <th>帳單金額</th>
+            <th>未出帳金額</th>
+            <th>截止日期</th>
+            <th>已預付</th>
+            <th>待繳金額</th>
+            <th>繳清日期</th>
+            <th>狀態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="query-table-body"></tbody>
+      </table>
+      <div class="empty-hint" id="query-empty" style="display:none">此月份無帳單資料</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 匯出／匯入 ===== -->
+<div id="page-data" class="page">
+  <div class="card">
+    <h2>本機暫存設定</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;flex:1;min-width:220px">
+        <input type="checkbox" id="public-mode-checkbox" onchange="togglePublicMode(this.checked)"
+          style="margin-top:3px;width:16px;height:16px;flex-shrink:0;accent-color:#e53e3e">
+        <span>
+          <span style="font-weight:600;color:#c53030">這是公共電腦，不暫存至本機</span><br>
+          <span style="font-size:0.82rem;color:#718096">勾選後資料僅存於記憶體，關閉瀏覽器後即消失。請記得在離開前匯出備份。</span>
+        </span>
+      </label>
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:600;margin-bottom:6px;font-size:0.9rem">清除本機暫存</div>
+        <p style="font-size:0.82rem;color:#718096;margin-bottom:10px">將目前儲存在本機（localStorage）的所有信用卡與帳單資料清除。</p>
+        <button class="btn btn-danger btn-sm" onclick="clearLocalStorage()">清除本機暫存資料</button>
+        <div id="ls-stats" style="font-size:0.8rem;color:#718096;margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>匯出資料</h2>
+    <p style="font-size:0.9rem;color:#718096;margin-bottom:16px">將所有信用卡設定與帳單紀錄匯出為 JSON 檔案，可作為備份或轉移至其他裝置使用。</p>
+    <div class="form-row" style="gap:10px">
+      <button class="btn btn-primary" onclick="exportData()">匯出全部資料（JSON）</button>
+    </div>
+    <div id="export-preview" style="display:none;margin-top:16px">
+      <div style="font-size:0.82rem;color:#718096;margin-bottom:6px">預覽（前 300 字元）：</div>
+      <pre id="export-preview-text" style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:0.78rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all;max-height:140px;overflow-y:auto"></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>匯入資料</h2>
+    <p style="font-size:0.9rem;color:#718096;margin-bottom:4px">選擇先前匯出的 JSON 檔案進行匯入。</p>
+    <p style="font-size:0.85rem;color:#e53e3e;margin-bottom:16px;font-weight:500">注意：匯入時可選擇「覆蓋」或「合併」模式。覆蓋會清除現有所有資料。</p>
+
+    <div class="form-row" style="align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="form-group" style="flex:none">
+        <label>選擇 JSON 檔案</label>
+        <input type="file" id="import-file" accept=".json" style="padding:6px 0;border:none;font-size:0.9rem">
+      </div>
+      <div class="form-group" style="flex:none">
+        <label>匯入模式</label>
+        <select id="import-mode" style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.95rem">
+          <option value="merge">合併（保留現有，新增匯入）</option>
+          <option value="overwrite">覆蓋（清除現有，全部替換）</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:4px">
+      <button class="btn btn-success" onclick="importData()">執行匯入</button>
+    </div>
+
+    <div id="import-result" style="display:none;margin-top:16px;padding:12px;border-radius:8px;font-size:0.88rem"></div>
+  </div>
+
+  <div class="card">
+    <h2>目前資料統計</h2>
+    <div id="data-stats" style="display:flex;gap:24px;flex-wrap:wrap;margin-top:4px"></div>
+  </div>
+</div>
+
+<!-- ===== 信用卡編輯 Modal ===== -->
+<div class="modal-overlay" id="edit-card-modal">
+  <div class="modal">
+    <h3>編輯信用卡</h3>
+    <input type="hidden" id="edit-card-id">
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>信用卡名稱</label>
+        <input type="text" id="edit-card-name-input" maxlength="30">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>顏色標記</label>
+      <div class="color-options" id="edit-color-options"></div>
+      <input type="hidden" id="edit-card-color-input">
+      <input type="color" id="edit-card-color-custom-picker" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" onchange="applyEditCustomColor(this.value)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#e2e8f0;color:#4a5568" onclick="closeCardModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveCardEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 編輯 Modal ===== -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>編輯帳單</h3>
+    <input type="hidden" id="edit-bill-id">
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>信用卡</label>
+        <input type="text" id="edit-card-name" disabled>
+      </div>
+      <div class="form-group">
+        <label>帳單月份</label>
+        <input type="month" id="edit-month" disabled>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>帳單金額（元）</label>
+        <input type="number" id="edit-amount" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>截止日期</label>
+        <input type="date" id="edit-due-date">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>已預付金額（元）</label>
+        <input type="number" id="edit-prepaid" min="0" step="1">
+      </div>
+      <div class="form-group">
+        <label>未出帳金額（元）<span style="font-size:0.78rem;color:#a0aec0;font-weight:400">（結帳前的估算）</span></label>
+        <input type="number" id="edit-pre-amount" placeholder="不填表示無估算" min="0" step="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>繳清日期（填入代表已繳清）</label>
+        <input type="date" id="edit-paid-date">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" style="background:#e2e8f0;color:#4a5568" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveBill()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== Storage =====
+const STORAGE_CARDS = 'ccm_cards';
+const STORAGE_BILLS = 'ccm_bills';
+
+let publicMode = false;
+let memCards = [];
+let memBills = [];
+let lastExportedBillCount = 0; // 上次匯出時的帳單數，用來計算未匯出筆數
+
+function loadCards() {
+  if (publicMode) return [...memCards];
+  try { return JSON.parse(localStorage.getItem(STORAGE_CARDS)) || []; } catch { return []; }
+}
+function saveCards(data) {
+  if (publicMode) { memCards = data; updateNavCounter(); return; }
+  localStorage.setItem(STORAGE_CARDS, JSON.stringify(data));
+}
+function loadBills() {
+  if (publicMode) return [...memBills];
+  try { return JSON.parse(localStorage.getItem(STORAGE_BILLS)) || []; } catch { return []; }
+}
+function saveBills(data) {
+  if (publicMode) { memBills = data; updateNavCounter(); return; }
+  localStorage.setItem(STORAGE_BILLS, JSON.stringify(data));
+}
+
+function updateNavCounter() {
+  const btn = document.getElementById('nav-data-btn');
+  if (!btn) return;
+  if (publicMode) {
+    const unsaved = memBills.length - lastExportedBillCount;
+    if (unsaved > 0) {
+      btn.innerHTML = `匯出／匯入 <span style="background:#e53e3e;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.72rem;font-weight:700;margin-left:4px;vertical-align:middle">${unsaved} 筆未匯出</span>`;
+    } else {
+      btn.textContent = '匯出／匯入';
+    }
+  } else {
+    btn.textContent = '匯出／匯入';
+  }
+}
+
+function togglePublicMode(checked) {
+  if (checked) {
+    const existCards = JSON.parse(localStorage.getItem(STORAGE_CARDS) || '[]');
+    const existBills = JSON.parse(localStorage.getItem(STORAGE_BILLS) || '[]');
+    if (existCards.length > 0 || existBills.length > 0) {
+      if (confirm(`本機已有 ${existCards.length} 張信用卡、${existBills.length} 筆帳單。\n是否載入記憶體繼續使用？（選「取消」則從空白開始）`)) {
+        memCards = existCards;
+        memBills = existBills;
+        lastExportedBillCount = existBills.length; // 視為已匯出過，不列入未匯出計數
+      } else {
+        memCards = [];
+        memBills = [];
+        lastExportedBillCount = 0;
+      }
+    } else {
+      memCards = [];
+      memBills = [];
+      lastExportedBillCount = 0;
+    }
+    publicMode = true;
+  } else {
+    const unsaved = memBills.length - lastExportedBillCount;
+    if (unsaved > 0 && !confirm(`記憶體中有 ${unsaved} 筆帳單尚未匯出，切換回一般模式後這些資料將不會存入本機。確定繼續？`)) {
+      document.getElementById('public-mode-checkbox').checked = true;
+      return;
+    }
+    publicMode = false;
+    memCards = [];
+    memBills = [];
+    lastExportedBillCount = 0;
+  }
+  updateNavCounter();
+  updateLsStats();
+  renderCCList();
+  renderQuery();
+}
+
+function clearLocalStorage() {
+  const cards = JSON.parse(localStorage.getItem(STORAGE_CARDS) || '[]');
+  const bills  = JSON.parse(localStorage.getItem(STORAGE_BILLS) || '[]');
+  if (cards.length === 0 && bills.length === 0) { showToast('本機暫存已是空的'); return; }
+  if (!confirm(`確定要清除本機暫存的 ${cards.length} 張信用卡與 ${bills.length} 筆帳單？此操作無法復原。`)) return;
+  localStorage.removeItem(STORAGE_CARDS);
+  localStorage.removeItem(STORAGE_BILLS);
+  updateLsStats();
+  if (!publicMode) { renderCCList(); renderQuery(); renderDataStats(); }
+  showToast('本機暫存已清除');
+}
+
+function updateLsStats() {
+  const el = document.getElementById('ls-stats');
+  if (!el) return;
+  if (publicMode) {
+    el.textContent = '（公共電腦模式中，不使用本機暫存）';
+    return;
+  }
+  const cards = JSON.parse(localStorage.getItem(STORAGE_CARDS) || '[]');
+  const bills  = JSON.parse(localStorage.getItem(STORAGE_BILLS) || '[]');
+  el.textContent = cards.length === 0 && bills.length === 0
+    ? '目前本機暫存為空'
+    : `目前本機暫存：${cards.length} 張信用卡、${bills.length} 筆帳單`;
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ===== Toast =====
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ===== Page Nav =====
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['page-cards','page-add','page-query','page-data'].indexOf(id);
+  document.querySelectorAll('nav button')[idx].classList.add('active');
+  if (id === 'page-add') refreshAddCardSelect();
+  if (id === 'page-query') renderQuery();
+  if (id === 'page-data') { renderDataStats(); updateLsStats(); }
+}
+
+// ===== Colors =====
+const COLORS = [
+  '#4299e1','#48bb78','#ed8936','#e53e3e','#9f7aea',
+  '#38b2ac','#f6ad55','#fc8181','#68d391','#63b3ed',
+  '#b794f4','#76e4f7','#f6e05e','#fc8181','#d53f8c'
+];
+
+function renderColorOptions(selected) {
+  const wrap = document.getElementById('color-options');
+  wrap.innerHTML = '';
+  const isPreset = COLORS.includes(selected);
+
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'color-opt' + (c === selected ? ' selected' : '');
+    d.style.background = c;
+    d.title = c;
+    d.onclick = () => {
+      document.getElementById('cc-color-input').value = c;
+      wrap.querySelectorAll('.color-opt, .color-opt-custom').forEach(o => o.classList.remove('selected'));
+      d.classList.add('selected');
+    };
+    wrap.appendChild(d);
+  });
+
+  // 自訂按鈕
+  const custom = document.createElement('div');
+  custom.className = 'color-opt-custom' + (!isPreset ? ' selected' : '');
+  custom.title = '自訂顏色';
+  if (!isPreset) {
+    // 顯示目前自訂色
+    custom.style.background = selected;
+    custom.style.backgroundImage = 'none';
+  }
+  custom.onclick = () => {
+    const picker = document.getElementById('cc-color-custom-picker');
+    picker.click();
+  };
+  wrap.appendChild(custom);
+}
+
+function applyCustomColor(color) {
+  document.getElementById('cc-color-input').value = color;
+  const wrap = document.getElementById('color-options');
+  wrap.querySelectorAll('.color-opt, .color-opt-custom').forEach(o => o.classList.remove('selected'));
+  const custom = wrap.querySelector('.color-opt-custom');
+  custom.style.background = color;
+  custom.style.backgroundImage = 'none';
+  custom.classList.add('selected');
+}
+
+// ===== Credit Card Management =====
+function renderCCList() {
+  const cards = loadCards();
+  const list = document.getElementById('cc-list');
+  if (cards.length === 0) {
+    list.innerHTML = '<div class="empty-hint">尚未設定任何信用卡</div>';
+    return;
+  }
+  list.innerHTML = cards.map(c => `
+    <div class="cc-item">
+      <span class="color-dot" style="background:${c.color}"></span>
+      <span class="cc-name">${escHtml(c.name)}</span>
+      <button class="btn btn-primary btn-sm" onclick="openEditCardModal('${c.id}')">編輯</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCreditCard('${c.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+
+function addCreditCard() {
+  const name = document.getElementById('cc-name-input').value.trim();
+  const color = document.getElementById('cc-color-input').value;
+  if (!name) { showToast('請輸入信用卡名稱'); return; }
+  const cards = loadCards();
+  if (cards.some(c => c.name === name)) { showToast('此名稱已存在'); return; }
+  cards.push({ id: genId(), name, color });
+  saveCards(cards);
+  document.getElementById('cc-name-input').value = '';
+  renderCCList();
+  showToast('已新增：' + name);
+}
+
+function openEditCardModal(id) {
+  const card = loadCards().find(c => c.id === id);
+  if (!card) return;
+  document.getElementById('edit-card-id').value = id;
+  document.getElementById('edit-card-name-input').value = card.name;
+  document.getElementById('edit-card-color-input').value = card.color;
+  renderEditColorOptions(card.color);
+  document.getElementById('edit-card-modal').classList.add('open');
+}
+
+function closeCardModal() {
+  document.getElementById('edit-card-modal').classList.remove('open');
+}
+
+function renderEditColorOptions(selected) {
+  const wrap = document.getElementById('edit-color-options');
+  wrap.innerHTML = '';
+  const isPreset = COLORS.includes(selected);
+
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'color-opt' + (c === selected ? ' selected' : '');
+    d.style.background = c;
+    d.title = c;
+    d.onclick = () => {
+      document.getElementById('edit-card-color-input').value = c;
+      wrap.querySelectorAll('.color-opt, .color-opt-custom').forEach(o => o.classList.remove('selected'));
+      d.classList.add('selected');
+    };
+    wrap.appendChild(d);
+  });
+
+  const custom = document.createElement('div');
+  custom.className = 'color-opt-custom' + (!isPreset ? ' selected' : '');
+  custom.title = '自訂顏色';
+  if (!isPreset) { custom.style.background = selected; custom.style.backgroundImage = 'none'; }
+  custom.onclick = () => document.getElementById('edit-card-color-custom-picker').click();
+  wrap.appendChild(custom);
+}
+
+function applyEditCustomColor(color) {
+  document.getElementById('edit-card-color-input').value = color;
+  const wrap = document.getElementById('edit-color-options');
+  wrap.querySelectorAll('.color-opt, .color-opt-custom').forEach(o => o.classList.remove('selected'));
+  const custom = wrap.querySelector('.color-opt-custom');
+  custom.style.background = color;
+  custom.style.backgroundImage = 'none';
+  custom.classList.add('selected');
+}
+
+function saveCardEdit() {
+  const id = document.getElementById('edit-card-id').value;
+  const name = document.getElementById('edit-card-name-input').value.trim();
+  const color = document.getElementById('edit-card-color-input').value;
+  if (!name) { showToast('請輸入信用卡名稱'); return; }
+  const cards = loadCards();
+  if (cards.some(c => c.name === name && c.id !== id)) { showToast('此名稱已存在'); return; }
+  const idx = cards.findIndex(c => c.id === id);
+  if (idx === -1) return;
+  cards[idx] = { ...cards[idx], name, color };
+  saveCards(cards);
+  closeCardModal();
+  renderCCList();
+  showToast('已更新：' + name);
+}
+
+function deleteCreditCard(id) {
+  const cards = loadCards();
+  const card = cards.find(c => c.id === id);
+  if (!card) return;
+  const bills = loadBills();
+  const used = bills.some(b => b.cardId === id);
+  if (used) { showToast('此卡已有帳單，無法刪除'); return; }
+  if (!confirm(`確定要刪除「${card.name}」嗎？`)) return;
+  saveCards(cards.filter(c => c.id !== id));
+  renderCCList();
+  showToast('已刪除');
+}
+
+// ===== Add Bill =====
+function refreshAddCardSelect() {
+  const cards = loadCards();
+  const sel = document.getElementById('add-card-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- 選擇信用卡 --</option>' +
+    cards.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+function autoFillDueDate() {
+  const cardId = document.getElementById('add-card-select').value;
+  const month  = document.getElementById('add-month').value;
+  const dueDateEl = document.getElementById('add-due-date');
+
+  // 已手動填過就不覆蓋
+  if (!cardId || !month || dueDateEl.dataset.userEdited === '1') return;
+
+  const bills = loadBills()
+    .filter(b => b.cardId === cardId && b.dueDate && b.month < month)
+    .sort((a, b) => b.month.localeCompare(a.month)); // 最近的排前面
+
+  if (bills.length === 0) return;
+
+  const lastDay = bills[0].dueDate.slice(8, 10); // 取 DD
+  const newDate = `${month}-${lastDay}`;
+
+  // 確認該日期合法（例如 2 月沒有 31 日）
+  const d = new Date(newDate);
+  if (isNaN(d.getTime())) return;
+
+  dueDateEl.value = newDate;
+}
+
+function addBill() {
+  const cardId = document.getElementById('add-card-select').value;
+  const month  = document.getElementById('add-month').value;
+  const amount = parseFloat(document.getElementById('add-amount').value) || 0;
+  const dueDate = document.getElementById('add-due-date').value;
+  const prepaid  = parseFloat(document.getElementById('add-prepaid').value) || 0;
+  const preAmountRaw = document.getElementById('add-pre-amount').value;
+  const preAmount = preAmountRaw !== '' ? (parseFloat(preAmountRaw) || 0) : null;
+
+  if (!cardId) { showToast('請選擇信用卡'); return; }
+  if (!month)  { showToast('請選擇帳單月份'); return; }
+  if (amount < 0) { showToast('金額不可為負數'); return; }
+  if (amount > 0 && !dueDate) { showToast('有金額時請輸入截止日期'); return; }
+
+  const bills = loadBills();
+  // Check duplicate for same card + month
+  if (bills.some(b => b.cardId === cardId && b.month === month)) {
+    if (!confirm('此信用卡該月份已有帳單，確定再新增一筆？')) return;
+  }
+
+  bills.push({ id: genId(), cardId, month, amount, dueDate, prepaid, preAmount, paidDate: '', createdAt: Date.now() });
+  saveBills(bills);
+  showToast('帳單已儲存');
+  clearAddForm();
+}
+
+function clearAddForm() {
+  document.getElementById('add-card-select').value = '';
+  document.getElementById('add-amount').value = '';
+  document.getElementById('add-due-date').value = '';
+  document.getElementById('add-prepaid').value = '';
+  document.getElementById('add-pre-amount').value = '';
+}
+
+// ===== Query =====
+function setQueryThisMonth() {
+  const now = new Date();
+  const m = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('query-month').value = m;
+  renderQuery();
+}
+
+function renderQuery() {
+  const month = document.getElementById('query-month').value;
+  if (!month) { document.getElementById('query-summary').innerHTML = ''; document.getElementById('query-table-body').innerHTML = ''; return; }
+
+  const cards = loadCards();
+  const bills = loadBills().filter(b => b.month === month);
+  const summaryEl = document.getElementById('query-summary');
+  const tbodyEl = document.getElementById('query-table-body');
+  const emptyEl = document.getElementById('query-empty');
+
+  const totalsEl = document.getElementById('query-totals');
+
+  if (bills.length === 0) {
+    summaryEl.innerHTML = '<div class="empty-hint" style="grid-column:1/-1">此月份無帳單資料</div>';
+    tbodyEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    totalsEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // ===== 月份統計列 =====
+  let totalEffective = 0;  // 有效帳單總額（金額優先，無則用未出帳）
+  let totalPrepaid   = 0;
+  let totalPending   = 0;
+  let estimateCount  = 0;  // 有幾筆是用未出帳估算的
+
+  bills.forEach(b => {
+    const useEstimate = b.amount === 0 && b.preAmount != null;
+    const effective   = useEstimate ? b.preAmount : b.amount;
+    if (useEstimate && b.preAmount > 0) estimateCount++;
+
+    totalEffective += effective;
+    totalPrepaid   += b.prepaid;
+
+    const isPaid = b.amount === 0
+      ? false  // 免繳不列入待繳
+      : (b.paidDate || b.prepaid >= b.amount);
+    if (!isPaid) totalPending += Math.max(0, effective - b.prepaid);
+  });
+
+  const [y, m] = month.split('-');
+  const monthLabel = `${y} 年 ${parseInt(m)} 月`;
+  const estimateNote = estimateCount > 0
+    ? `<span style="font-size:0.78rem;color:#a0aec0;margin-left:6px">（含 ${estimateCount} 筆未出帳估算）</span>`
+    : '';
+
+  totalsEl.style.display = 'block';
+  totalsEl.innerHTML = `
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <span style="font-size:1rem;font-weight:700;color:#1a365d">${monthLabel} 累計</span>
+      ${estimateNote}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <div style="flex:1;min-width:130px;background:#ebf8ff;border:1.5px solid #bee3f8;border-radius:10px;padding:12px 16px">
+        <div style="font-size:0.78rem;color:#2b6cb0;margin-bottom:4px">有效帳單總額</div>
+        <div style="font-size:1.25rem;font-weight:700;color:#1a365d">$${fmt(totalEffective)}</div>
+      </div>
+      <div style="flex:1;min-width:130px;background:#f0fff4;border:1.5px solid #9ae6b4;border-radius:10px;padding:12px 16px">
+        <div style="font-size:0.78rem;color:#38a169;margin-bottom:4px">已預付合計</div>
+        <div style="font-size:1.25rem;font-weight:700;color:#276749">$${fmt(totalPrepaid)}</div>
+      </div>
+      <div style="flex:1;min-width:130px;background:#fff5f5;border:1.5px solid #feb2b2;border-radius:10px;padding:12px 16px">
+        <div style="font-size:0.78rem;color:#e53e3e;margin-bottom:4px">待繳合計</div>
+        <div style="font-size:1.25rem;font-weight:700;color:#c53030">$${fmt(totalPending)}</div>
+      </div>
+    </div>
+  `;
+
+  // Summary cards
+  summaryEl.innerHTML = bills.map(b => {
+    const card = cards.find(c => c.id === b.cardId) || { name: '未知', color: '#ccc' };
+    const pending = Math.max(0, b.amount - b.prepaid);
+    const status = b.amount === 0
+      ? (b.preAmount != null ? 'pre' : 'exempt')
+      : (b.paidDate ? 'paid' : (b.prepaid >= b.amount ? 'paid' : (b.prepaid > 0 ? 'partial' : 'unpaid')));
+    const statusLabel = status === 'exempt' ? '免繳' : status === 'pre' ? '待出帳' : (status === 'paid' ? `已繳清${b.paidDate ? ' (' + b.paidDate + ')' : ''}` : (status === 'partial' ? '部分預付' : '待繳'));
+    const statusClass = status === 'exempt' ? 'badge-exempt' : status === 'pre' ? 'badge-pre' : (status === 'paid' ? 'badge-paid' : (status === 'partial' ? 'badge-partial' : 'badge-unpaid'));
+    return `
+      <div class="bill-card">
+        <div class="bc-header">
+          <span class="color-dot" style="background:${card.color};width:16px;height:16px"></span>
+          <span class="bc-name">${escHtml(card.name)}</span>
+          <span class="bc-month">${b.month}</span>
+        </div>
+        <div class="bc-row"><span>帳單金額</span><span>$${fmt(b.amount)}</span></div>
+        ${b.preAmount != null ? `<div class="bc-row"><span style="color:#a0aec0">未出帳金額</span><span style="color:#a0aec0;font-style:italic">$${fmt(b.preAmount)}</span></div>` : ''}
+        <div class="bc-row"><span>截止日期</span><span>${b.dueDate}</span></div>
+        <div class="bc-row"><span>已預付</span><span class="paid-mark">$${fmt(b.prepaid)}</span></div>
+        <div class="bc-row"><span>待繳金額</span><span class="${b.paidDate ? 'paid-mark' : 'pending'}">$${fmt(b.paidDate ? 0 : pending)}</span></div>
+        <div class="bc-row"><span>狀態</span><span class="badge ${statusClass}">${statusLabel}</span></div>
+        <div class="bc-actions">
+          <button class="btn btn-primary btn-sm" onclick="openEditModal('${b.id}')">編輯</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteBill('${b.id}')">刪除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Table
+  tbodyEl.innerHTML = bills.map(b => {
+    const card = cards.find(c => c.id === b.cardId) || { name: '未知', color: '#ccc' };
+    const pending = b.paidDate ? 0 : Math.max(0, b.amount - b.prepaid);
+    const status = b.amount === 0
+      ? (b.preAmount != null ? 'pre' : 'exempt')
+      : (b.paidDate ? 'paid' : (b.prepaid >= b.amount ? 'paid' : (b.prepaid > 0 ? 'partial' : 'unpaid')));
+    const statusLabel = status === 'exempt' ? '免繳' : status === 'pre' ? '待出帳' : (status === 'paid' ? '已繳清' : (status === 'partial' ? '部分預付' : '待繳'));
+    const statusClass = status === 'exempt' ? 'badge-exempt' : status === 'pre' ? 'badge-pre' : (status === 'paid' ? 'badge-paid' : (status === 'partial' ? 'badge-partial' : 'badge-unpaid'));
+    return `<tr>
+      <td><span class="color-dot" style="background:${card.color}"></span>${escHtml(card.name)}</td>
+      <td>${b.month}</td>
+      <td>$${fmt(b.amount)}</td>
+      <td style="color:#a0aec0;font-style:italic">${b.preAmount != null ? '$' + fmt(b.preAmount) : '-'}</td>
+      <td>${b.dueDate}</td>
+      <td style="color:#38a169">$${fmt(b.prepaid)}</td>
+      <td style="color:#e53e3e;font-weight:600">$${fmt(pending)}</td>
+      <td>${b.paidDate || '-'}</td>
+      <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="openEditModal('${b.id}')">編輯</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== Edit Modal =====
+function openEditModal(billId) {
+  const bills = loadBills();
+  const b = bills.find(x => x.id === billId);
+  if (!b) return;
+  const cards = loadCards();
+  const card = cards.find(c => c.id === b.cardId) || { name: '未知' };
+
+  document.getElementById('edit-bill-id').value = billId;
+  document.getElementById('edit-card-name').value = card.name;
+  document.getElementById('edit-month').value = b.month;
+  document.getElementById('edit-amount').value = b.amount;
+  document.getElementById('edit-due-date').value = b.dueDate;
+  document.getElementById('edit-prepaid').value = b.prepaid;
+  document.getElementById('edit-pre-amount').value = b.preAmount != null ? b.preAmount : '';
+  document.getElementById('edit-paid-date').value = b.paidDate || '';
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+function saveBill() {
+  const id = document.getElementById('edit-bill-id').value;
+  const amount  = parseFloat(document.getElementById('edit-amount').value) || 0;
+  const dueDate = document.getElementById('edit-due-date').value;
+  const prepaid = parseFloat(document.getElementById('edit-prepaid').value) || 0;
+  const preAmountRaw = document.getElementById('edit-pre-amount').value;
+  const preAmount = preAmountRaw !== '' ? (parseFloat(preAmountRaw) || 0) : null;
+  const paidDate = document.getElementById('edit-paid-date').value;
+
+  if (amount < 0) { showToast('金額不可為負數'); return; }
+  if (amount > 0 && !dueDate) { showToast('有金額時請輸入截止日期'); return; }
+
+  const bills = loadBills();
+  const idx = bills.findIndex(b => b.id === id);
+  if (idx === -1) { showToast('找不到帳單'); return; }
+
+  bills[idx] = { ...bills[idx], amount, dueDate, prepaid, preAmount, paidDate };
+  saveBills(bills);
+  closeModal();
+  renderQuery();
+  showToast('帳單已更新');
+}
+
+function deleteBill(id) {
+  if (!confirm('確定要刪除此帳單？')) return;
+  saveBills(loadBills().filter(b => b.id !== id));
+  renderQuery();
+  showToast('已刪除');
+}
+
+// ===== Export / Import =====
+function exportData() {
+  const cards = loadCards();
+  const bills = loadBills();
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    cards,
+    bills
+  };
+  const json = JSON.stringify(payload, null, 2);
+
+  // Show preview
+  const previewEl = document.getElementById('export-preview');
+  document.getElementById('export-preview-text').textContent = json.slice(0, 300) + (json.length > 300 ? '\n...' : '');
+  previewEl.style.display = 'block';
+
+  // Download
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `信用卡帳務_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  if (publicMode) {
+    lastExportedBillCount = memBills.length;
+    updateNavCounter();
+  }
+  showToast('已匯出：' + a.download);
+}
+
+function importData() {
+  const fileInput = document.getElementById('import-file');
+  const mode = document.getElementById('import-mode').value;
+  const resultEl = document.getElementById('import-result');
+
+  if (!fileInput.files || !fileInput.files[0]) {
+    showToast('請先選擇 JSON 檔案');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let payload;
+    try {
+      payload = JSON.parse(e.target.result);
+    } catch {
+      resultEl.style.display = 'block';
+      resultEl.style.background = '#fff5f5';
+      resultEl.style.border = '1px solid #fc8181';
+      resultEl.style.color = '#9b2c2c';
+      resultEl.textContent = '檔案格式錯誤，請確認是否為正確的 JSON 匯出檔。';
+      return;
+    }
+
+    if (!Array.isArray(payload.cards) || !Array.isArray(payload.bills)) {
+      resultEl.style.display = 'block';
+      resultEl.style.background = '#fff5f5';
+      resultEl.style.border = '1px solid #fc8181';
+      resultEl.style.color = '#9b2c2c';
+      resultEl.textContent = '檔案內容不符合格式，缺少 cards 或 bills 欄位。';
+      return;
+    }
+
+    if (mode === 'overwrite') {
+      if (!confirm(`覆蓋模式將清除現有 ${loadCards().length} 張信用卡與 ${loadBills().length} 筆帳單，確定繼續？`)) return;
+      saveCards(payload.cards);
+      saveBills(payload.bills);
+      showResult(resultEl, true, `覆蓋完成：匯入 ${payload.cards.length} 張信用卡、${payload.bills.length} 筆帳單。`);
+    } else {
+      // Merge: skip duplicates by id
+      const existCards = loadCards();
+      const existBills = loadBills();
+      const existCardIds = new Set(existCards.map(c => c.id));
+      const existBillIds = new Set(existBills.map(b => b.id));
+
+      const newCards = payload.cards.filter(c => !existCardIds.has(c.id));
+      const newBills = payload.bills.filter(b => !existBillIds.has(b.id));
+
+      saveCards([...existCards, ...newCards]);
+      saveBills([...existBills, ...newBills]);
+      showResult(resultEl, true,
+        `合併完成：新增 ${newCards.length} 張信用卡（略過 ${payload.cards.length - newCards.length} 筆重複）、` +
+        `新增 ${newBills.length} 筆帳單（略過 ${payload.bills.length - newBills.length} 筆重複）。`
+      );
+    }
+
+    renderCCList();
+    renderDataStats();
+    fileInput.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function showResult(el, success, msg) {
+  el.style.display = 'block';
+  el.style.background = success ? '#f0fff4' : '#fff5f5';
+  el.style.border = `1px solid ${success ? '#68d391' : '#fc8181'}`;
+  el.style.color = success ? '#276749' : '#9b2c2c';
+  el.textContent = msg;
+  showToast(msg.slice(0, 40));
+}
+
+function renderDataStats() {
+  const cards = loadCards();
+  const bills = loadBills();
+  const totalAmount = bills.reduce((s, b) => s + b.amount, 0);
+  const totalPrepaid = bills.reduce((s, b) => s + b.prepaid, 0);
+  const totalPending = bills.filter(b => !b.paidDate).reduce((s, b) => s + Math.max(0, b.amount - b.prepaid), 0);
+
+  document.getElementById('data-stats').innerHTML = [
+    { label: '信用卡種數', value: cards.length + ' 張', color: '#2b6cb0' },
+    { label: '帳單筆數', value: bills.length + ' 筆', color: '#6b46c1' },
+    { label: '帳單總金額', value: '$' + fmt(totalAmount), color: '#2d3748' },
+    { label: '總已預付', value: '$' + fmt(totalPrepaid), color: '#38a169' },
+    { label: '總待繳', value: '$' + fmt(totalPending), color: '#e53e3e' },
+  ].map(s => `
+    <div style="background:#f7fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px 20px;min-width:140px;text-align:center">
+      <div style="font-size:0.78rem;color:#718096;margin-bottom:6px">${s.label}</div>
+      <div style="font-size:1.2rem;font-weight:700;color:${s.color}">${s.value}</div>
+    </div>
+  `).join('');
+}
+
+// ===== Utils =====
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmt(n) {
+  return Number(n).toLocaleString('zh-TW');
+}
+
+// Close modal clicking overlay
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('edit-card-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeCardModal();
+});
+
+// ===== Init =====
+(function init() {
+  renderColorOptions(COLORS[0]);
+  renderCCList();
+
+  // Set default month for add form and query
+  const now = new Date();
+  const m = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('add-month').value = m;
+  document.getElementById('query-month').value = m;
+  renderQuery();
+  updateLsStats();
+})();
+</script>
+</body>
+</html>
