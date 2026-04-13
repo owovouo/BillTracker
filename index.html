@@ -4,23 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>信用卡帳務管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --color-primary: #2b6cb0;
+      --color-primary-dark: #1a4f8a;
+      --color-primary-bg: #ebf8ff;
+      --color-focus-ring: rgba(43, 108, 176, 0.25);
+      --color-border: #e2e8f0;
+      --color-muted: #718096;
+      --color-text: #2d3748;
+      --color-heading: #1a365d;
+      --color-bg: #f0f4f8;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 14px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+
     body {
-      font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
-      background: #f0f4f8;
-      color: #2d3748;
+      font-family: 'IBM Plex Sans', "Microsoft JhengHei", "PingFang TC", sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
       min-height: 100vh;
+      font-size: 16px;
+      line-height: 1.5;
     }
 
     header {
       background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
       color: #fff;
-      padding: 16px 24px;
+      padding: 14px 24px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    header h1 { font-size: 1.4rem; letter-spacing: 1px; }
+    header h1 {
+      font-size: 1.3rem;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header h1 svg { flex-shrink: 0; }
 
     nav {
       display: flex;
@@ -36,13 +68,19 @@
       background: transparent;
       font-size: 0.95rem;
       cursor: pointer;
-      color: #718096;
+      color: var(--color-muted);
       border-bottom: 3px solid transparent;
-      transition: all 0.2s;
+      transition: color 0.2s, background 0.2s;
       white-space: nowrap;
+      font-family: inherit;
     }
-    nav button:hover { color: #2b6cb0; background: #ebf8ff; }
-    nav button.active { color: #2b6cb0; border-bottom-color: #2b6cb0; font-weight: 600; }
+    nav button:hover { color: var(--color-primary); background: var(--color-primary-bg); }
+    nav button.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
+    nav button:focus-visible {
+      outline: 3px solid var(--color-primary);
+      outline-offset: -3px;
+      background: var(--color-primary-bg);
+    }
 
     .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
     .page.active { display: block; }
@@ -50,46 +88,64 @@
     /* Cards */
     .card {
       background: #fff;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       padding: 20px;
       margin-bottom: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid rgba(226,232,240,0.8);
     }
-    .card h2 { font-size: 1.05rem; margin-bottom: 14px; color: #1a365d; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .card h2 { font-size: 1rem; margin-bottom: 14px; color: var(--color-heading); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; font-weight: 600; letter-spacing: 0.2px; }
 
     /* Form */
     .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; align-items: flex-end; }
     .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
-    .form-group label { font-size: 0.82rem; color: #718096; font-weight: 500; }
+    .form-group label { font-size: 0.82rem; color: var(--color-muted); font-weight: 500; }
     .form-group input, .form-group select {
-      padding: 8px 10px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
+      padding: 9px 11px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
       font-size: 0.95rem;
+      font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
       background: #fff;
+      min-height: 44px;
+      color: var(--color-text);
     }
-    .form-group input:focus, .form-group select:focus { border-color: #2b6cb0; }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-focus-ring);
+    }
 
     /* Buttons */
     .btn {
-      padding: 9px 20px;
+      padding: 10px 20px;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       font-size: 0.9rem;
+      font-family: inherit;
       cursor: pointer;
       font-weight: 600;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .btn:active { transform: scale(0.97); }
-    .btn-primary { background: #2b6cb0; color: #fff; }
-    .btn-primary:hover { background: #1a4f8a; }
+    .btn:focus-visible {
+      outline: 3px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .btn-primary { background: var(--color-primary); color: #fff; }
+    .btn-primary:hover { background: var(--color-primary-dark); }
     .btn-danger { background: #e53e3e; color: #fff; }
     .btn-danger:hover { background: #c53030; }
+    .btn-danger:focus-visible { outline-color: #e53e3e; }
     .btn-success { background: #38a169; color: #fff; }
     .btn-success:hover { background: #2f855a; }
-    .btn-sm { padding: 5px 12px; font-size: 0.82rem; }
+    .btn-success:focus-visible { outline-color: #38a169; }
+    .btn-sm { padding: 7px 12px; font-size: 0.82rem; min-height: 36px; }
 
     /* Color dot */
     .color-dot {
@@ -107,22 +163,27 @@
       display: flex;
       align-items: center;
       background: #f7fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 8px 14px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
       gap: 10px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
+    .cc-item:hover { border-color: #bee3f8; box-shadow: 0 1px 4px rgba(43,108,176,0.1); }
     .cc-item .cc-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
 
     /* Bill summary cards */
     .bill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 4px; }
     .bill-card {
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
       padding: 16px;
       background: #fff;
       position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: box-shadow 0.2s;
     }
+    .bill-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .bill-card .bc-header { display: flex; align-items: center; margin-bottom: 12px; gap: 8px; }
     .bill-card .bc-name { font-weight: 700; font-size: 1rem; }
     .bill-card .bc-month { font-size: 0.8rem; color: #718096; margin-left: auto; }
@@ -136,48 +197,67 @@
 
     /* Table */
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th { background: #ebf4ff; color: #2b6cb0; font-weight: 600; padding: 10px 8px; text-align: left; }
-    td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    th { background: #ebf4ff; color: #1e40af; font-weight: 600; padding: 10px 8px; text-align: left; font-size: 0.82rem; letter-spacing: 0.3px; }
+    td { padding: 9px 8px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
     tr:hover td { background: #f7fafc; }
+    thead tr th:first-child { border-radius: 6px 0 0 6px; }
+    thead tr th:last-child { border-radius: 0 6px 6px 0; }
 
     /* Month filter */
     .filter-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    .filter-row label { font-size: 0.85rem; color: #718096; font-weight: 500; }
+    .filter-row label { font-size: 0.85rem; color: var(--color-muted); font-weight: 500; }
+    .filter-row input[type="month"] {
+      padding: 8px 11px;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      min-height: 40px;
+    }
+    .filter-row input[type="month"]:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-focus-ring);
+    }
 
     /* Status badge */
     .badge {
-      display: inline-block;
-      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
       border-radius: 12px;
       font-size: 0.78rem;
       font-weight: 600;
+      letter-spacing: 0.2px;
     }
-    .badge-paid { background: #c6f6d5; color: #276749; }
-    .badge-unpaid { background: #fed7d7; color: #9b2c2c; }
-    .badge-partial { background: #fefcbf; color: #744210; }
-    .badge-exempt { background: #e2e8f0; color: #718096; }
-    .badge-pre { background: #ebf4ff; color: #2b6cb0; }
+    .badge-paid { background: #c6f6d5; color: #22543d; }
+    .badge-unpaid { background: #fed7d7; color: #822727; }
+    .badge-partial { background: #fef3c7; color: #78350f; }
+    .badge-exempt { background: #e2e8f0; color: #4a5568; }
+    .badge-pre { background: #ebf4ff; color: #1e40af; }
 
     /* Modal */
     .modal-overlay {
       display: none;
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4);
+      background: rgba(0,0,0,0.52);
       z-index: 100;
       align-items: center;
       justify-content: center;
+      padding: 16px;
     }
     .modal-overlay.open { display: flex; }
     .modal {
       background: #fff;
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
       padding: 24px;
       min-width: 320px;
       max-width: 500px;
-      width: 92%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.1);
     }
-    .modal h3 { font-size: 1.05rem; margin-bottom: 16px; color: #1a365d; }
+    .modal h3 { font-size: 1.05rem; margin-bottom: 16px; color: var(--color-heading); font-weight: 600; }
     .modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
     /* Toast */
@@ -185,16 +265,19 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #2d3748;
+      background: #1a202c;
       color: #fff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.9rem;
+      padding: 11px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 500;
       z-index: 200;
       opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s;
+      transform: translateY(8px);
+      transition: opacity 0.25s, transform 0.25s;
       pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      max-width: 320px;
     }
     #toast.show { opacity: 1; transform: translateY(0); }
 
@@ -233,7 +316,13 @@
 <body>
 
 <header>
-  <h1>💳 信用卡帳務管理</h1>
+  <h1>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+      <line x1="1" y1="10" x2="23" y2="10"></line>
+    </svg>
+    信用卡帳務管理
+  </h1>
 </header>
 
 <nav>
@@ -857,6 +946,39 @@ function setQueryThisMonth() {
   renderQuery();
 }
 
+// 根據截止日與狀態計算緊急程度樣式（僅套用於 unpaid / partial）
+function getUrgencyStyle(dueDate, status) {
+  if ((status !== 'unpaid' && status !== 'partial') || !dueDate) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due   = new Date(dueDate); due.setHours(0, 0, 0, 0);
+  const days  = Math.round((due - today) / 86400000);
+  if (days >= 8) return null;
+
+  let cardStyle, rowStyle, label;
+  if (days >= 5) {
+    cardStyle = 'background:#fffde7;border-color:#ecc94b;';
+    rowStyle  = 'background:#fffde7';
+    label     = `<span style="font-size:0.75rem;color:#d69e2e;font-weight:600;margin-left:auto">剩 ${days} 天</span>`;
+  } else if (days >= 3) {
+    cardStyle = 'background:#fefcbf;border-color:#f6ad55;box-shadow:0 0 0 2px #f6ad5540;';
+    rowStyle  = 'background:#fefcbf';
+    label     = `<span style="font-size:0.75rem;color:#c05621;font-weight:700;margin-left:auto">剩 ${days} 天</span>`;
+  } else if (days >= 1) {
+    cardStyle = 'background:#feebcb;border-color:#ed8936;box-shadow:0 0 0 3px #ed893650;';
+    rowStyle  = 'background:#feebcb';
+    label     = `<span style="font-size:0.75rem;color:#9c4221;font-weight:700;margin-left:auto">緊急！剩 ${days} 天</span>`;
+  } else if (days === 0) {
+    cardStyle = 'background:#fff5f5;border-color:#fc8181;box-shadow:0 0 0 3px #fc818160;';
+    rowStyle  = 'background:#fff5f5';
+    label     = `<span style="font-size:0.75rem;color:#e53e3e;font-weight:700;margin-left:auto">今天截止！</span>`;
+  } else {
+    cardStyle = 'background:#fff5f5;border-color:#e53e3e;box-shadow:0 0 0 4px #e53e3e70;';
+    rowStyle  = 'background:#fff5f5';
+    label     = `<span style="font-size:0.75rem;color:#c53030;font-weight:700;margin-left:auto">逾期 ${Math.abs(days)} 天</span>`;
+  }
+  return { days, cardStyle, rowStyle, label };
+}
+
 function renderQuery() {
   const month = document.getElementById('query-month').value;
   if (!month) { document.getElementById('query-summary').innerHTML = ''; document.getElementById('query-table-body').innerHTML = ''; return; }
@@ -935,12 +1057,14 @@ function renderQuery() {
       : (b.paidDate ? 'paid' : (b.prepaid >= b.amount ? 'paid' : (b.prepaid > 0 ? 'partial' : 'unpaid')));
     const statusLabel = status === 'exempt' ? '免繳' : status === 'pre' ? '待出帳' : (status === 'paid' ? `已繳清${b.paidDate ? ' (' + b.paidDate + ')' : ''}` : (status === 'partial' ? '部分預付' : '待繳'));
     const statusClass = status === 'exempt' ? 'badge-exempt' : status === 'pre' ? 'badge-pre' : (status === 'paid' ? 'badge-paid' : (status === 'partial' ? 'badge-partial' : 'badge-unpaid'));
+    const urg = getUrgencyStyle(b.dueDate, status);
     return `
-      <div class="bill-card">
+      <div class="bill-card"${urg ? ` style="${urg.cardStyle}"` : ''}>
         <div class="bc-header">
           <span class="color-dot" style="background:${card.color};width:16px;height:16px"></span>
           <span class="bc-name">${escHtml(card.name)}</span>
           <span class="bc-month">${b.month}</span>
+          ${urg ? urg.label : ''}
         </div>
         <div class="bc-row"><span>帳單金額</span><span>$${fmt(b.amount)}</span></div>
         ${b.preAmount != null ? `<div class="bc-row"><span style="color:#a0aec0">未出帳金額</span><span style="color:#a0aec0;font-style:italic">$${fmt(b.preAmount)}</span></div>` : ''}
@@ -965,7 +1089,8 @@ function renderQuery() {
       : (b.paidDate ? 'paid' : (b.prepaid >= b.amount ? 'paid' : (b.prepaid > 0 ? 'partial' : 'unpaid')));
     const statusLabel = status === 'exempt' ? '免繳' : status === 'pre' ? '待出帳' : (status === 'paid' ? '已繳清' : (status === 'partial' ? '部分預付' : '待繳'));
     const statusClass = status === 'exempt' ? 'badge-exempt' : status === 'pre' ? 'badge-pre' : (status === 'paid' ? 'badge-paid' : (status === 'partial' ? 'badge-partial' : 'badge-unpaid'));
-    return `<tr>
+    const urgT = getUrgencyStyle(b.dueDate, status);
+    return `<tr${urgT ? ` style="${urgT.rowStyle}"` : ''}>
       <td><span class="color-dot" style="background:${card.color}"></span>${escHtml(card.name)}</td>
       <td>${b.month}</td>
       <td>$${fmt(b.amount)}</td>
